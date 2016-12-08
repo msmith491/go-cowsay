@@ -11,8 +11,6 @@ import (
 
 var (
 	whichCow = flag.String("f", "default", "Which cow should say")
-
-// boolCow  = flag.Bool("boolcow", false, "Bool cow opt")
 )
 
 func main() {
@@ -26,9 +24,6 @@ func main() {
 	} else {
 		message = makeBubble(strings.Join(flag.Args(), " "))
 	}
-	// fmt.Println(flag.Args())
-	// splitArgs := strings.Split(strings.Join(flag.Args(), " "), "-")
-	// firstArgs := splitArgs[:len(splitArgs)]
 
 	data, err := Asset(fmt.Sprintf("src/go-cowsay/cows/%s.cow", *whichCow))
 	if err != nil {
@@ -41,7 +36,8 @@ func main() {
 	}
 	for _, line := range strings.Split(cow, "\n")[1:] {
 		if !strings.Contains(line, "EOC") && !strings.HasPrefix(line, "##") {
-			if *whichCow == "default" && strings.Contains(line, "----w ") {
+			// Hack to fix the cow belly/legs
+			if strings.Contains(line, "||----w ") {
 				fmt.Println("  " + line)
 			} else {
 				fmt.Println(line)
@@ -109,7 +105,6 @@ func makeBubble(s string) string {
 	for i := 0; i <= writelen; i++ {
 		b2.WriteString("-")
 	}
-	// b2.WriteString("\n")
 	return b2.String()
 }
 
