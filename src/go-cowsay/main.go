@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -153,9 +154,18 @@ func main() {
 		message = makeBubble(strings.Join(flag.Args(), " "), *wrapCow)
 	}
 
-	data, err := Asset(fmt.Sprintf("src/go-cowsay/cows/%s.cow", *whichCow))
-	if err != nil {
-		fmt.Println("Couldn't access asset")
+	var data []byte
+	var err error
+	if strings.HasSuffix(*whichCow, ".cow") {
+		data, err = ioutil.ReadFile(*whichCow)
+		if err != nil {
+			fmt.Println("Couldn't access file")
+		}
+	} else {
+		data, err = Asset(fmt.Sprintf("src/go-cowsay/cows/%s.cow", *whichCow))
+		if err != nil {
+			fmt.Println("Couldn't access asset")
+		}
 	}
 	sdata := fmt.Sprintf("%s", data)
 	cow := formatAnimal(sdata)
