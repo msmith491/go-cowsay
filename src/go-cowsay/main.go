@@ -135,6 +135,7 @@ func formatAnimal(s string) string {
 
 func main() {
 	flag.Parse()
+
 	var message string
 	fi, _ := os.Stdin.Stat()
 
@@ -151,7 +152,12 @@ func main() {
 		text, _ := reader.ReadString('\n')
 		message = makeBubble(strings.TrimSpace(text), *wrapCow)
 	} else {
-		message = makeBubble(strings.Join(flag.Args(), " "), *wrapCow)
+		args := strings.Join(flag.Args(), " ")
+		if args == "" {
+			flag.Usage()
+			os.Exit(1)
+		}
+		message = makeBubble(args, *wrapCow)
 	}
 
 	var data []byte
