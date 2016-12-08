@@ -14,48 +14,40 @@ var (
 	listCow  = flag.Bool("l", false, "List available cowfiles")
 	wrapCow  = flag.Bool("n", false, "Disable word wrap")
 	widthCow = flag.Int("W", 40, "Width of cow bubble in characters")
+
+	borgCow     = flag.Bool("b", false, "Borg Cow Mode")
+	greedyCow   = flag.Bool("g", false, "Greedy Cow Mode")
+	paranoidCow = flag.Bool("p", false, "Paranoid Cow Mode")
+	stonedCow   = flag.Bool("s", false, "Stoned Cow Mode")
+	tiredCow    = flag.Bool("t", false, "Tired Cow Mode")
+	wiredCow    = flag.Bool("w", false, "Wired Cow Mode")
+	youthfulCow = flag.Bool("y", false, "Youthful Cow Mode")
+	customCow   = flag.String("e", "", "Custom Cow Eye String")
+	tongueCow   = flag.String("T", "", "Custom Cow Tongue String")
 )
 
-func main() {
-	flag.Parse()
-	var message string
-	fi, _ := os.Stdin.Stat()
-
-	if *listCow {
-		for key := range _bindata {
-			f := strings.Split(strings.Replace(key, ".cow", "", -1), "/")
-			fmt.Printf(f[len(f)-1] + " ")
-		}
-		fmt.Println()
-		os.Exit(0)
-	}
-	if fi.Size() > 0 {
-		reader := bufio.NewReader(os.Stdin)
-		text, _ := reader.ReadString('\n')
-		message = makeBubble(strings.TrimSpace(text), *wrapCow)
+func getEyes() string {
+	var result string
+	if *borgCow {
+		result = "=="
+	} else if *greedyCow {
+		result = "$$"
+	} else if *paranoidCow {
+		result = "@@"
+	} else if *stonedCow {
+		result = "**"
+	} else if *tiredCow {
+		result = "--"
+	} else if *wiredCow {
+		result = "OO"
+	} else if *youthfulCow {
+		result = ".."
+	} else if *customCow != "" {
+		result = (*customCow)[:2]
 	} else {
-		message = makeBubble(strings.Join(flag.Args(), " "), *wrapCow)
+		result = "oo"
 	}
-
-	data, err := Asset(fmt.Sprintf("src/go-cowsay/cows/%s.cow", *whichCow))
-	if err != nil {
-		fmt.Println("Couldn't access asset")
-	}
-	sdata := fmt.Sprintf("%s", data)
-	cow := formatAnimal(sdata)
-	for _, line := range strings.Split(message, "\n") {
-		fmt.Println(line)
-	}
-	for _, line := range strings.Split(cow, "\n")[1:] {
-		if !strings.Contains(line, "EOC") && !strings.HasPrefix(line, "##") {
-			// Hack to fix the cow belly/legs
-			if strings.Contains(line, "||----w ") {
-				fmt.Println("  " + line)
-			} else {
-				fmt.Println(line)
-			}
-		}
-	}
+	return result
 }
 
 func makeBubble(s string, wordWrap bool) string {
@@ -126,10 +118,53 @@ func makeBubble(s string, wordWrap bool) string {
 
 func formatAnimal(s string) string {
 	var animal string
-	animal = strings.Replace(s, "$eyes", "oo", -1)
-	animal = strings.Replace(animal, "$tongue", "", -1)
+	var tongue string
+	if *tongueCow != "" {
+		tongue = (*tongueCow)[:2]
+	} else {
+		tongue = "  "
+	}
+	animal = strings.Replace(s, "$eyes", getEyes(), -1)
+	animal = strings.Replace(animal, "$tongue", tongue, -1)
 	animal = strings.Replace(animal, "$thoughts", "\\", -1)
 	animal = strings.Replace(animal, "\\\\", "\\", -1)
 	animal = strings.Replace(animal, "\\@", "@", -1)
 	return animal
+}
+
+func main() {
+	flag.Parse()
+	var message string
+	fi, _ := os.Stdin.Stat()
+
+	if *listCow {
+		for key := range _bindata {
+			f := strings.Split(strings.Replace(key, ".cow", "", -1), "/")
+			fmt.Printf(f[len(f)-1] + " ")
+		}
+		fmt.Println()
+		os.Exit(0)
+	}
+	if fi.Size() > 0 {
+		reader := bufio.NewReader(os.Stdin)
+		text, _ := reader.ReadString('\n')
+		message = makeBubble(strings.TrimSpace(text), *wrapCow)
+	} else {
+		message = makeBubble(strings.Join(flag.Args(), " "), *wrapCow)
+	}
+
+	data, err := Asset(fmt.Sprintf("src/go-cowsay/cows/%s.cow", *whichCow))
+	if err != nil {
+		fmt.Println("Couldn't access asset")
+	}
+	sdata := fmt.Sprintf("%s", data)
+	cow := formatAnimal(sdata)
+	for _, line := range strings.Split(message, "\n") {
+		fmt.Println(line)
+	}
+	for _, line := range strings.Split(cow, "\n")[1:] {
+		if !strings.Contains(line, "EOC") && !strings.HasPrefix(line, "##") {
+			fmt.Println(line)
+		}
+	}
 }
