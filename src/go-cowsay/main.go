@@ -11,18 +11,30 @@ import (
 
 var (
 	whichCow = flag.String("f", "default", "Which cow should say")
+	listCow  = flag.Bool("l", false, "List available cowfiles")
+	wrapCow  = flag.Bool("n", false, "Disable word wrap")
+	widthCow = flag.Int("W", 40, "Width of cow bubble in characters")
 )
 
 func main() {
 	flag.Parse()
 	var message string
 	fi, _ := os.Stdin.Stat()
+
+	if *listCow {
+		for key := range _bindata {
+			f := strings.Split(strings.Replace(key, ".cow", "", -1), "/")
+			fmt.Printf(f[len(f)-1] + " ")
+		}
+		fmt.Println()
+		os.Exit(0)
+	}
 	if fi.Size() > 0 {
 		reader := bufio.NewReader(os.Stdin)
 		text, _ := reader.ReadString('\n')
-		message = makeBubble(strings.TrimSpace(text))
+		message = makeBubble(strings.TrimSpace(text), *wrapCow)
 	} else {
-		message = makeBubble(strings.Join(flag.Args(), " "))
+		message = makeBubble(strings.Join(flag.Args(), " "), *wrapCow)
 	}
 
 	data, err := Asset(fmt.Sprintf("src/go-cowsay/cows/%s.cow", *whichCow))
@@ -46,54 +58,58 @@ func main() {
 	}
 }
 
-func makeBubble(s string) string {
+func makeBubble(s string, wordWrap bool) string {
 	var b bytes.Buffer
 	var b2 bytes.Buffer
 	var writelen int
 
 	pad := " "
-	if len(s) < 40 {
+	if len(s) < *widthCow || wordWrap {
 		writelen = len(s)
 		b.WriteString("<" + pad)
 		b.WriteString(s)
 		b.WriteString(pad + ">\n")
 	} else {
-		writelen = 41
+		writelen = *widthCow + 1
 		index := 0
+		// Top text line
+		text := s[:index+*widthCow]
 		b.WriteString("/" + pad)
-		b.WriteString(s[:index+40])
+		b.WriteString(text)
 		b.WriteString(pad + "\\\n")
+		index += *widthCow
 		for true {
-			index += 40
-			if len(s) < index+40 {
-				break
-			}
-			b.WriteString("|" + pad)
-			if s[index+40] == ' ' {
-				b.WriteString(s[index : index+40])
+			if len(s) <= index+*widthCow {
+				text = s[index:]
 			} else {
-				subindex := index + 40
-				for true {
-					if s[subindex] == ' ' {
-						break
-					}
-					subindex -= 1
-				}
-				b.WriteString(s[index:subindex])
-				// Padding for wordwrap
-				for i := 0; i < index+40-subindex; i++ {
+				text = s[index : index+*widthCow]
+			}
+			if len(text) < *widthCow {
+				// Last Text Lines
+				b.WriteString("\\" + pad)
+				b.WriteString(strings.TrimSpace(text))
+				for i := 0; i < *widthCow-len(text); i++ {
 					b.WriteString(pad)
 				}
-				index = subindex + 1
+				b.WriteString(pad + "/\n")
+				break
+			}
+			// Middle Lines
+			b.WriteString("|" + pad)
+			if text[len(text)-1] != ' ' || s[len(text)+index] != ' ' {
+				split := strings.Split(text, " ")
+				b.WriteString(strings.Join(split[:len(split)-1], " "))
+				lenLast := len(split[len(split)-1])
+				index -= lenLast
+				for i := 0; i <= lenLast; i++ {
+					b.WriteString(pad)
+				}
+			} else {
+				b.WriteString(text)
 			}
 			b.WriteString(pad + "|\n")
+			index += *widthCow
 		}
-		b.WriteString("\\" + pad)
-		b.WriteString(strings.TrimSpace(s[index:]))
-		for i := 0; i < 40-(len(s)-index); i++ {
-			b.WriteString(pad)
-		}
-		b.WriteString(pad + "/\n")
 	}
 	b2.WriteString(pad)
 	for i := 0; i <= writelen; i++ {
