@@ -126,6 +126,7 @@ func formatAnimal(s string) string {
 		tongue = "  "
 	}
 	animal = strings.Replace(s, "$eyes", getEyes(), -1)
+	animal = strings.Replace(animal, "${eyes}", getEyes(), -1)
 	animal = strings.Replace(animal, "$tongue", tongue, -1)
 	animal = strings.Replace(animal, "$thoughts", "\\", -1)
 	animal = strings.Replace(animal, "\\\\", "\\", -1)
