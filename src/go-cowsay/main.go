@@ -29,6 +29,16 @@ var (
 	tongueCow   = flag.String("T", "", "Custom Cow Tongue String")
 
 	randomCow = flag.Bool("random", false, "Choose Random Cow")
+
+	smallSideL string
+	smallSideR string
+	bigSideL   string
+	bigSideR   string
+	startL     string
+	startR     string
+	endL       string
+	endR       string
+	voice      string
 )
 
 func getAsset(choice string) []byte {
@@ -73,26 +83,19 @@ func getEyes() string {
 	return result
 }
 
-func makeBubble(s string, wordWrap bool) string {
+func makeBubble(s string) string {
 	var b bytes.Buffer
 	var b2 bytes.Buffer
-	var writelen int
+	longest := 0
 
 	pad := " "
-	if len(s) < *widthCow || wordWrap {
-		writelen = len(s)
-		b.WriteString("<" + pad)
+	if len(s) < *widthCow || *wrapCow {
+		b.WriteString(smallSideL + pad)
 		b.WriteString(s)
-		b.WriteString(pad + ">\n")
+		b.WriteString(pad + smallSideR + "\n")
 	} else {
-		writelen = *widthCow + 1
 		index := 0
-		// Top text line
-		text := s[:index+*widthCow]
-		b.WriteString("/" + pad)
-		b.WriteString(text)
-		b.WriteString(pad + "\\\n")
-		index += *widthCow
+		text := ""
 		for true {
 			if len(s) <= index+*widthCow {
 				text = s[index:]
@@ -101,39 +104,52 @@ func makeBubble(s string, wordWrap bool) string {
 			}
 			if len(text) < *widthCow {
 				// Last Text Lines
-				b.WriteString("\\" + pad)
+				b.WriteString(endL + pad)
 				b.WriteString(strings.TrimSpace(text))
-				for i := 0; i < *widthCow-len(text); i++ {
+				for i := 0; i <= longest-len(text); i++ {
 					b.WriteString(pad)
 				}
-				b.WriteString(pad + "/\n")
+				b.WriteString(pad + endR + "\n")
 				break
 			}
 			// Middle Lines
-			b.WriteString("|" + pad)
+			if index == 0 {
+				b.WriteString(startL + pad)
+			} else {
+				b.WriteString(bigSideL + pad)
+			}
 			if text[len(text)-1] != ' ' || s[len(text)+index] != ' ' {
 				split := strings.Split(text, " ")
-				b.WriteString(strings.Join(split[:len(split)-1], " "))
+				text = strings.Join(split[:len(split)-1], " ")
+				b.WriteString(text)
 				lenLast := len(split[len(split)-1])
 				index -= lenLast
-				for i := 0; i <= lenLast; i++ {
+				if len(text) > longest {
+					longest = len(text)
+				}
+				for i := 0; i <= longest-len(text); i++ {
 					b.WriteString(pad)
 				}
 			} else {
+				longest = len(text)
 				b.WriteString(text)
 			}
-			b.WriteString(pad + "|\n")
+			if index == 0 {
+				b.WriteString(pad + startR + "\n")
+			} else {
+				b.WriteString(pad + bigSideR + "\n")
+			}
 			index += *widthCow
 		}
 	}
 	b2.WriteString(pad)
-	for i := 0; i <= writelen; i++ {
+	for i := 0; i <= longest+2; i++ {
 		b2.WriteString("_")
 	}
 	b2.WriteString("\n")
 	b2.Write(b.Bytes())
 	b2.WriteString(pad)
-	for i := 0; i <= writelen; i++ {
+	for i := 0; i <= longest+2; i++ {
 		b2.WriteString("-")
 	}
 	return b2.String()
@@ -150,7 +166,7 @@ func formatAnimal(s string) string {
 	animal = strings.Replace(s, "$eyes", getEyes(), -1)
 	animal = strings.Replace(animal, "${eyes}", getEyes(), -1)
 	animal = strings.Replace(animal, "$tongue", tongue, -1)
-	animal = strings.Replace(animal, "$thoughts", "\\", -1)
+	animal = strings.Replace(animal, "$thoughts", voice, -1)
 	animal = strings.Replace(animal, "\\\\", "\\", -1)
 	animal = strings.Replace(animal, "\\@", "@", -1)
 	return animal
@@ -158,6 +174,11 @@ func formatAnimal(s string) string {
 
 func main() {
 	flag.Parse()
+
+	think := false
+	if strings.Contains(os.Args[0], "cowthink") {
+		think = true
+	}
 
 	var message string
 	fi, _ := os.Stdin.Stat()
@@ -170,17 +191,40 @@ func main() {
 		fmt.Println()
 		os.Exit(0)
 	}
+
+	if think {
+		smallSideL = "("
+		smallSideR = ")"
+		bigSideL = "("
+		bigSideR = ")"
+		startL = "("
+		startR = ")"
+		endL = "("
+		endR = ")"
+		voice = "o"
+	} else {
+		smallSideL = "<"
+		smallSideR = ">"
+		bigSideL = "|"
+		bigSideR = "|"
+		startL = "/"
+		startR = "\\"
+		endL = "\\"
+		endR = "/"
+		voice = "\\"
+	}
+
 	if fi.Size() > 0 {
 		reader := bufio.NewReader(os.Stdin)
 		text, _ := reader.ReadString('\n')
-		message = makeBubble(strings.TrimSpace(text), *wrapCow)
+		message = makeBubble(strings.TrimSpace(text))
 	} else {
 		args := strings.Join(flag.Args(), " ")
 		if args == "" {
 			flag.Usage()
 			os.Exit(1)
 		}
-		message = makeBubble(args, *wrapCow)
+		message = makeBubble(args)
 	}
 
 	var data []byte
