@@ -84,15 +84,17 @@ func getEyes() string {
 }
 
 func makeBubble(s string) string {
+	// Buffer to write and clear for each line
 	var b bytes.Buffer
-	var b2 bytes.Buffer
+	// String array to join and return
+	var result []string
 	longest := 0
 
 	pad := " "
 	if len(s) < *widthCow || *wrapCow {
-		b.WriteString(smallSideL + pad)
-		b.WriteString(s)
-		b.WriteString(pad + smallSideR + "\n")
+		b.WriteString(smallSideL + pad + s + pad + smallSideR)
+		result = append(result, b.String())
+		b.Reset()
 	} else {
 		index := 0
 		text := ""
@@ -104,12 +106,9 @@ func makeBubble(s string) string {
 			}
 			if len(text) < *widthCow {
 				// Last Text Lines
-				b.WriteString(endL + pad)
-				b.WriteString(strings.TrimSpace(text))
-				for i := 0; i <= longest-len(text); i++ {
-					b.WriteString(pad)
-				}
-				b.WriteString(pad + endR + "\n")
+				b.WriteString(endL + pad + strings.TrimSpace(text) + pad + endR)
+				result = append(result, b.String())
+				b.Reset()
 				break
 			}
 			// Middle Lines
@@ -124,35 +123,52 @@ func makeBubble(s string) string {
 				b.WriteString(text)
 				lenLast := len(split[len(split)-1])
 				index -= lenLast
-				if len(text) > longest {
-					longest = len(text)
-				}
-				for i := 0; i <= longest-len(text); i++ {
-					b.WriteString(pad)
-				}
 			} else {
-				longest = len(text)
 				b.WriteString(text)
 			}
-			if index == 0 {
-				b.WriteString(pad + startR + "\n")
+			if index <= 0 {
+				b.WriteString(pad + startR)
 			} else {
-				b.WriteString(pad + bigSideR + "\n")
+				b.WriteString(pad + bigSideR)
 			}
+			result = append(result, b.String())
+			b.Reset()
 			index += *widthCow
 		}
 	}
-	b2.WriteString(pad)
-	for i := 0; i <= longest+2; i++ {
-		b2.WriteString("_")
+
+	for _, line := range result {
+		if len(line) > longest {
+			longest = len(line)
+		}
 	}
-	b2.WriteString("\n")
-	b2.Write(b.Bytes())
-	b2.WriteString(pad)
-	for i := 0; i <= longest+2; i++ {
-		b2.WriteString("-")
+
+	for index, line := range result {
+		tmp := line[len(line)-1]
+		line = line[:len(line)-1]
+		diff := longest - len(line)
+		for i := 0; i <= diff; i++ {
+			line += pad
+		}
+		line += string(tmp)
+		result[index] = line
 	}
-	return b2.String()
+
+	b.WriteString(pad)
+	for i := 0; i < longest; i++ {
+		b.WriteString("_")
+	}
+	result = append([]string{b.String()}, result...)
+	b.Reset()
+
+	b.WriteString(pad)
+	for i := 0; i < longest; i++ {
+		b.WriteString("-")
+	}
+	result = append(result, b.String())
+	b.Reset()
+
+	return strings.Join(result, "\n")
 }
 
 func formatAnimal(s string) string {

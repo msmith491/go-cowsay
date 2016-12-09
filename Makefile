@@ -21,3 +21,8 @@ fmt:
 
 install:
 	sudo cp cowsay /usr/local/bin/
+
+quick:
+	env GOPATH=${GOPATH} bin/go-bindata -o src/go-cowsay/bindata.go src/go-cowsay/cows
+	env GOPATH=${GOPATH} go build -o cowsay go-cowsay
+	env GOPATH=${GOPATH} go build -o cowthink go-cowsay
