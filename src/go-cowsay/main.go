@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"strings"
 )
@@ -25,7 +26,25 @@ var (
 	youthfulCow = flag.Bool("y", false, "Youthful Cow Mode")
 	customCow   = flag.String("e", "", "Custom Cow Eye String")
 	tongueCow   = flag.String("T", "", "Custom Cow Tongue String")
+
+	randomCow = flag.Bool("random", false, "Choose Random Cow")
 )
+
+func getAsset(choice string) []byte {
+	if strings.HasSuffix(choice, ".cow") {
+		data, err := Asset(choice)
+		if err != nil {
+			fmt.Println("Couldn't access asset")
+		}
+		return data
+	} else {
+		data, err := Asset(fmt.Sprintf("src/go-cowsay/cows/%s.cow", choice))
+		if err != nil {
+			fmt.Println("Couldn't access asset")
+		}
+		return data
+	}
+}
 
 func getEyes() string {
 	var result string
@@ -163,16 +182,20 @@ func main() {
 
 	var data []byte
 	var err error
-	if strings.HasSuffix(*whichCow, ".cow") {
+	if *randomCow {
+		var assets []string
+		for key, _ := range _bindata {
+			assets = append(assets, key)
+		}
+		choice := assets[rand.Intn(len(assets))]
+		data = getAsset(choice)
+	} else if strings.HasSuffix(*whichCow, ".cow") {
 		data, err = ioutil.ReadFile(*whichCow)
 		if err != nil {
 			fmt.Println("Couldn't access file")
 		}
 	} else {
-		data, err = Asset(fmt.Sprintf("src/go-cowsay/cows/%s.cow", *whichCow))
-		if err != nil {
-			fmt.Println("Couldn't access asset")
-		}
+		data = getAsset(*whichCow)
 	}
 	sdata := fmt.Sprintf("%s", data)
 	cow := formatAnimal(sdata)
