@@ -24,6 +24,7 @@ var (
 	tiredCow    = flag.Bool("t", false, "Tired Cow Mode")
 	wiredCow    = flag.Bool("w", false, "Wired Cow Mode")
 	youthfulCow = flag.Bool("y", false, "Youthful Cow Mode")
+	deadCow     = flag.Bool("d", false, "Dead Cow Mode")
 	customCow   = flag.String("e", "", "Custom Cow Eye String")
 	tongueCow   = flag.String("T", "", "Custom Cow Tongue String")
 
@@ -62,6 +63,8 @@ func getEyes() string {
 		result = "OO"
 	} else if *youthfulCow {
 		result = ".."
+	} else if *deadCow {
+		result = "xx"
 	} else if *customCow != "" {
 		result = (*customCow)[:2]
 	} else {
